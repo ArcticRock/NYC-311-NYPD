@@ -4,7 +4,11 @@ Author: Abdelrahman Aggour
 ![Median Response Hours for Complaints by Neighborhood](plots/nyc_311_response_map.png)
 
 ## Table of Contents
-
+- [Introduction](#introduction)
+- [Context](#context)
+- [Data](#data)
+- [Statistical Analysis](#statistical-analysis)
+  - [Data Distribution](#data-distribution)
 ## Introduction
 Following recent discourse on equity in public services after New York City’s mayoral election, this study evaluates whether the New York City Police Department (NYPD) resolves service requests uniformly across boroughs.
 
@@ -14,7 +18,6 @@ In this project, I explored and analyzed NYC's 311 complaints handled by the NYP
 * Do response times differ by borough?
 * Does the likelihood of police action differ by borough?
 * Do complaint durations vary by mayoral administration?
-* Do certain complaint types get resolved faster than others?
 
 ## Context
 
@@ -77,7 +80,21 @@ Surprisingly, in the Bronx, the NYPD takes a longer median time to close complai
 
 #### Does the likelihood of police action differ by borough?
 
+To examine this relationship, I used a chi-square test of independence. This test helps determine whether the distribution of police action varies across boroughs. The null hypothesis assumes that borough and police action are independent, while the alternative hypothesis states that there is an association between borough and police action . The resulting p-value was less than 0.05, allowing us to reject the null hypothesis and accept the alternative hypothesis 
 
+![Did the NYPD take action](plots/tk_action.png)
+
+Once again, we see that in the Bronx, the NYPD takes action the least compared to other boroughs.
+
+#### Do complaints stay open longer under one mayor than the other?
+
+To examine this, I used a Mann–Whitney U test. The null hypothesis assumes that there is no difference in complaint durations between the mayors, while the alternative hypothesis states that a difference exists. The resulting p-value was less than 0.05, allowing us to reject the null hypothesis and conclude that complaints do stay open for different lengths of time under the two administrations.
+
+![Mayors](plots/box_plot_clean.png)
+
+## Conclusion 
+
+Looking at NYC 311 complaints handled by the NYPD, there are clear differences across boroughs and mayors. The Bronx stands out for poor service—complaints there take longer to be resolved and the police take action the least. Complaint types, response times, and whether the police respond all vary across boroughs, and complaints also stay open for different lengths of time under the de Blasio and Adams administrations. Overall, the NYPD doesn’t handle complaints the same way across the city, with the Bronx showing the most concerning gaps in service.
 
 
 
