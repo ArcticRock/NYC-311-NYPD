@@ -8,7 +8,12 @@ Author: Abdelrahman Aggour
 - [Context](#context)
 - [Data](#data)
 - [Statistical Analysis](#statistical-analysis)
-  - [Data Distribution](#data-distribution)
+- [Questions](#questions)
+    - [Are certain complaints more common in some boroughs than others?](#are-certain-complaints-more-common-in-some-boroughs-than-others)
+    - [Do Response Times Differ by Borough?](#do-response-times-differ-by-borough)
+    - [Does the likelihood of police action differ by borough?](#does-the-likelihood-of-police-action-differ-by-borough)
+    - [Do complaints stay open longer under one mayor than the other?](#do-complaints-stay-open-longer-under-one-mayor-than-the-other)
+- [Conclusion](#conclusion)
 ## Introduction
 Following recent discourse on equity in public services after New York City’s mayoral election, this study evaluates whether the New York City Police Department (NYPD) resolves service requests uniformly across boroughs.
 
