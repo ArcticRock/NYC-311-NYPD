@@ -1,7 +1,7 @@
 # Analyzing NYC's 311 complaints handled by the NYPD.
 Author: Abdelrahman Aggour
 
-![Median Response Hours for Complaints by Neighborhood](plots/nyc_311_response_map.pdf)
+![Median Response Hours for Complaints by Neighborhood](plots/nyc_311_response_map.png)
 
 ## Table of Contents
 
@@ -36,6 +36,6 @@ The data used in this project were obtained from NYC Open Data via two separate 
 ### Data Distribution
 The first thing that I looked at is the data distribution of the "duration in hours" column
 
-![orignal data distribution](plots/op_hist_dist.pdf)
+![orignal data distribution](plots/op_hist_dist.png)
 
 
