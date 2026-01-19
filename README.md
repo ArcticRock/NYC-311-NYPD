@@ -1,4 +1,4 @@
-# Analyzing NYC's 311 complaints handled by the NYPD.
+# Analyzing NYC's 311 complaints handled by the NYPD
 Author: Abdelrahman Aggour
 
 ![Median Response Hours for Complaints by Neighborhood](plots/nyc_311_response_map.png)
