@@ -1,0 +1,456 @@
+# NNYC Service Request Statistical Analysis
+
+## Plotting
+
+```{r}
+library('ggplot2')
+library('qqplotr')
+library('dplyr')
+library(scales)
+data = read.csv('../CSV/NYPD_Complaints_Eric.csv')
+```
+
+```{r}
+data
+```
+
+```{r}
+
+op <- ggplot(data, aes(x = duration.in.hours)) +
+  geom_histogram(
+    bins = 30,                  # number of bins
+    fill = "#1f77b4",           # professional blue color
+    color = "white"             # white borders around bars
+  ) +
+  labs(
+    title = "Distribution of Complaint Resolution Times with outliers",
+    x = "Resolution Time (hours)",
+    y = "Number of Complaints"
+  ) +
+  theme_minimal(base_size = 14) +  # clean theme with readable text
+  theme(
+    plot.title = element_text(face = "bold", hjust = 0.5, size = 18),
+    axis.title = element_text(face = "bold", size = 14),
+    axis.text = element_text(size = 12)
+  )
+
+
+ggsave(
+  filename = "../plots/op_hist_dist.png",
+  plot = op,
+  width = 12, height = 8,  # size in inches
+  units = "in",
+  dpi = 300
+)
+op
+```
+
+| Outliers were observed and excluded to mitigate their influence on statistical estimates.
+
+```{r}
+Q1 <- quantile(data$duration.in.hours, .25)
+Q3 <- quantile(data$duration.in.hours, .75)
+IQR <- IQR(data$duration.in.hours)
+```
+
+```{r}
+  lower_bound <- Q1 - 1.5 * IQR
+  upper_bound <- Q3 + 1.5 * IQR
+```
+
+```{r}
+data <- data[data$duration.in.hours > lower_bound & data$duration.in.hours < upper_bound,]
+data
+```
+
+```{r}
+p <- ggplot(data, aes(x = duration.in.hours)) +
+  geom_histogram(
+    bins = 30,                  # number of bins
+    fill = "#1f77b4",           # professional blue color
+    color = "white"             # white borders around bars
+  ) +
+  labs(
+    title = "Distribution of Complaint Resolution Times",
+    x = "Resolution Time (hours)",
+    y = "Number of Complaints"
+  ) +
+  theme_minimal(base_size = 14) +  # clean theme with readable text
+  theme(
+    plot.title = element_text(face = "bold", hjust = 0.5, size = 18),
+    axis.title = element_text(face = "bold", size = 14),
+    axis.text = element_text(size = 12)
+  )
+
+# Export to PDF for poster
+ggsave(
+  filename = "../plots/hist_dist.png",
+  plot = p,
+  width = 12, height = 8,  # size in inches
+  units = "in",
+  dpi = 300
+)
+p
+```
+
+```{r}
+sample_data = sample(data$duration.in.hours, 1000, replace = FALSE, prob = NULL)
+```
+
+```{r}
+shapiro_test <- shapiro.test(sample_data)
+shapiro_test
+```
+
+We reject the null hypothesis that the data is normally distributed
+
+```{r}
+ggplot(data, aes(x = duration.in.hours)) +
+  geom_histogram(bins = 30, fill = "steelblue", color = "white") +
+  facet_wrap(~ borough) +
+  labs(
+    x = "Duration (hours)",
+    y = "Count",
+    title = "Distribution of Duration by Borough"
+  ) +
+  theme_minimal()
+```
+
+```{r}
+N_comp<-data %>%
+  count(borough) %>%
+  ggplot(aes(x = reorder(borough, n), y = n)) +
+  geom_col(fill = "steelblue") +
+  geom_text(aes(label = comma(n)),
+            hjust = -0.1,
+            size = 4) +
+  coord_flip() +
+  scale_y_continuous(labels = comma,
+                     expand = expansion(mult = c(0, 0.15))) +
+  labs(
+    title = "Number of NYPD Complaints by Borough",
+    x = "Borough",
+    y = "Number of Complaints"
+  ) +
+  theme_minimal(base_size = 14)
+ggsave(
+  filename = "../plots/n_complaint.png",
+  plot = N_comp,
+  width = 12, height = 8,  # size in inches
+  units = "in",
+  dpi = 300
+)
+N_comp
+```
+
+## Answering Questions
+
+### Are the boroughs independent of the complaint type?
+
+```{r}
+
+top5 <- data %>%
+  count(complaint_type, sort = TRUE) %>%
+  slice_head(n = 5) %>%
+  pull(complaint_type)
+
+# Step 2: Group remaining complaint types as "Other"
+df_plot <- data %>%
+  mutate(complaint_group = ifelse(
+    complaint_type %in% top5,
+    complaint_type,
+    "Other"
+  ))
+
+# Step 3: Define professional color palette
+palette_colors <- c(
+  "Noise - Residential" = "#1f77b4",        # blue
+  "Illegal Parking" = "#ff7f0e",  # orange
+  "Blocked Driveway" = "#9467bd", # green
+  "Noise - Street/Sidewalk" = "#d62728", # red
+  "Noise - Vehicle" = "#2ca02c",   # purple
+  "Other" = "gray70"              # gray for everything else
+)
+# Step 4: Create proportional stacked bar chart
+stacked_bar<-ggplot(df_plot, aes(x = borough, fill = complaint_group)) +
+  geom_bar(position = "fill", color = "white", size = 0.3) +
+  scale_y_continuous(labels = scales::percent_format()) +
+  scale_fill_manual(values = palette_colors) +
+  labs(
+    title = "Borough-Level Differences in NYPD Complaint Types",
+    x = "Borough",
+    y = "Percentage of Complaints",
+    fill = "Complaint Type"
+  ) +
+  theme_minimal(base_size = 14) +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1, face = "bold"),
+    panel.grid.major.x = element_blank(),
+    panel.grid.minor = element_blank(),
+    axis.text.y = element_text(face = "bold"),
+    legend.position = "right",
+    axis.title = element_text(size = 20),
+    axis.text  = element_text(size = 20),
+    legend.title = element_text(size = 20),
+    legend.text  = element_text(size = 16)
+  )
+ggsave(
+  filename = "../plots/stacked_bar.png",
+  plot = N_comp,
+  width = 12, height = 8,  # size in inches
+  units = "in",
+  dpi = 300
+)
+
+stacked_bar
+```
+
+```{r}
+complaint_by_borough <- table(data$complaint_type, data$borough)
+complaint_by_borough
+```
+
+```{r}
+chi_test <- chisq.test(x = complaint_by_borough)
+chi_test
+```
+
+| There is a relationship between the type of crime and the borough
+
+### Is the distribution of resolution time the same across all boroughs?
+
+### Does the Borough have an affect on resolution?
+
+```{r}
+kurskal_test <- kruskal.test(duration.in.hours ~ borough, data = data)
+kurskal_test
+```
+
+| There is a statistically significant difference in complaint resolution time across boroughs
+
+```{r}
+library(ggplot2)
+
+cap <- quantile(data$duration.in.hours, 0.99, na.rm = TRUE)
+
+data_plot <- data %>%
+  mutate(
+    duration_capped = pmin(duration.in.hours, cap)
+  )
+bp_duration<-ggplot(data_plot, aes(x = borough, y = duration_capped, fill = borough)) +
+  geom_boxplot(outlier.shape = NA, width = 0.6) +
+  stat_summary(
+    fun = median,
+    geom = "point",
+    shape = 23,
+    size = 3,
+    fill = "white"
+  ) +
+  stat_boxplot(
+    geom = "errorbar",
+    width = 0.25,
+    linewidth = 1.2
+  )+
+  labs(
+    title = "Response Time Distribution by Borough",
+    subtitle = "Median response time highlighted",
+    x = "Borough",
+    y = "Response Time (hours)"
+  ) +
+  theme_minimal(base_size = 13) +
+  theme(
+    legend.position = "none",
+    plot.title = element_text(face = "bold")
+  )
+
+ggsave(
+  filename = "../plots/bp_duration.png",
+  plot = bp_duration,
+  width = 12, height = 8,  # size in inches
+  units = "in",
+  dpi = 300
+)
+bp_duration
+```
+
+![]()
+
+## Does the likelihood of police action differ by borough?
+
+```{r}
+tbl <- table(data$borough, data$took_action)
+tbl
+```
+
+```{r}
+chisq.test(tbl)
+```
+
+```{r}
+tk_action<-data %>%
+  group_by(borough) %>%
+  summarise(pct_action = mean(took_action == 1)*100) %>%
+  ggplot(aes(x = reorder(borough, pct_action), y = pct_action)) +
+  geom_col(fill = "steelblue") +
+  geom_text(aes(label = paste0(round(pct_action,1), "%")), hjust = -0.1) +
+  coord_flip() +
+  labs(title = "Percentage of Complaints Where Police Took Action by Borough",
+       x = "Borough", y = "Percentage") +
+  ylim(0,100) +
+  theme_minimal(base_size = 14)+
+  theme_minimal(base_size = 18) +  # increases base font size for axes and ticks
+  theme(
+    plot.title = element_text(size = 24, face = "bold"),  # bigger title
+    axis.title = element_text(size = 20, face = "bold"),   # bigger axis titles
+    axis.text = element_text(size = 16)                    # bigger tick labels
+  )
+
+ggsave(
+  filename = "../plots/tk_action.png",
+  plot = tk_action,
+  width = 15, height = 10,  # size in inches
+  units = "in",
+  dpi = 300
+)
+
+tk_action
+```
+
+## Is the difference in closing complaints a coincidence?
+
+```{r}
+ data_bill = read.csv("../CSV/NYPD_Complaints_Bill.csv")
+```
+
+```{r}
+data_bill
+```
+
+```{r}
+Q1 <- quantile(data_bill$duration.in.hours, .25)
+Q3 <- quantile(data_bill$duration.in.hours, .75)
+IQR <- IQR(data_bill$duration.in.hours)
+lower_bound <- Q1 - 1.5 * IQR
+upper_bound <- Q3 + 1.5 * IQR
+```
+
+```{r}
+data_bill <- data_bill[data_bill$duration.in.hours > lower_bound & data_bill$duration.in.hours < upper_bound & data_bill$duration > 0,]
+data_bill
+```
+
+```{r}
+wilcox_test <- wilcox.test(data$duration.in.hours, data_bill$duration.in.hours )
+wilcox_test
+```
+
+Different median under different Mayors. We can reject the idea that the difference is a coincidence
+
+```{r}
+median(data$duration.in.hours, na.rm = TRUE)
+median(data_bill$duration.in.hours, na.rm = TRUE)
+```
+
+```{r}
+df <- data.frame(
+  duration = c(data$duration.in.hours,
+               data_bill$duration.in.hours),
+  person = factor(
+    c(rep("Eric Adams", length(data$duration.in.hours)),
+      rep("Bill de Blasio", length(data_bill$duration.in.hours)))
+  )
+)
+```
+
+```{r}
+library(ggplot2)
+library(dplyr)
+
+y_max <- quantile(df$duration, 0.95)
+
+b <- ggplot(df, aes(x = person, y = duration, fill = person)) +
+  geom_boxplot(width = 0.5, alpha = 0.5, outlier.shape = NA) +
+   
+  stat_boxplot(geom = "errorbar", width = 0.25, linewidth = 1.2) +
+  labs(
+    title = "Service Request Duration by Mayoral Period",
+    x = NULL,
+    y = "Duration (hours)"
+  ) +
+  scale_fill_manual(values = c("Eric Adams" = "#4DAF4A", "Bill de Blasio" = "#377EB8")) +
+  theme_minimal(base_size = 14) +
+  theme(
+    legend.position = "none",
+    plot.title = element_text(hjust = 0.5, size = 24, face = "bold"),
+    panel.grid.minor = element_blank(),
+    axis.title = element_text(size = 20),
+    axis.text  = element_text(size = 18)
+  ) +
+  ylim(0, y_max)
+
+ggsave("../plots/box_plot_clean.png", plot = b, width = 10, height = 8, units = "in", dpi = 300)
+
+b
+
+```
+
+## Do certain complaint types get resolved faster than others?
+
+```{r}
+df_median <- data %>%
+  group_by(complaint_type) %>%
+  summarise(median_duration = median(duration.in.hours),
+            n = n()) %>%
+  ungroup()
+
+# Optional: keep only top 15 complaint types by count
+top_types <- df_median %>% 
+  top_n(15, n) %>% 
+  pull(complaint_type)
+
+df_median <- df_median %>%
+  filter(complaint_type %in% top_types)
+```
+
+```{r}
+library(ggplot2)
+
+b <- ggplot(df_median, aes(
+      x = reorder(complaint_type, median_duration),
+      y = median_duration,
+      fill = median_duration
+    )) +
+  geom_col() +
+  geom_text(aes(label = round(median_duration,1)), 
+            hjust = -0.1, size = 5) +  # show median on top of bar
+  coord_flip() +  # horizontal bars
+  scale_fill_gradient(low = "#4DAF4A", high = "#377EB8") +
+  labs(
+    title = "Median Duration of Complaints by Type",
+    x = "Complaint Type",
+    y = "Median Duration (hours)"
+  ) +
+  theme_minimal(base_size = 14) +
+  theme(
+    plot.title = element_text(hjust = 0.5, size = 24, face = "bold"),
+    axis.title = element_text(size = 20),
+    axis.text = element_text(size = 16),
+    legend.position = "none"
+  ) +
+  ylim(0, max(df_median$median_duration) * 1.1)  # add space for labels
+```
+
+```{r}
+ggsave(
+  filename = "../plots/median_duration_by_type.png",
+  plot = b,
+  width = 12,
+  height = 8,
+  units = "in",
+  dpi = 300
+)
+```
+
+```{r}
+kruskal.test(duration.in.hours ~ complaint_type, data = data)
+```
